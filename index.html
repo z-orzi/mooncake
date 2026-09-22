@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#f7e2bd" />
+<title>月饼拍拍乐</title>
+<style>
+  :root{
+    --bg:#fff6df;
+    --ink:#4d2d20;
+    --accent:#ef6a2d;
+    --accent2:#b44826;
+    --panel:#fffaf0;
+    --line:#e8cda6;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 20% 10%, #fffdf5 0 12%, transparent 13%),
+      radial-gradient(circle at 80% 0%, #ffe9bf 0 13%, transparent 14%),
+      linear-gradient(180deg,#fff7e7,#f7e2bd);
+    min-height:100vh;
+  }
+  header{
+    padding:28px 20px 18px;
+    text-align:center;
+  }
+  h1{margin:0;font-size:clamp(30px,5vw,52px);letter-spacing:.06em}
+  header p{margin:8px 0 0;opacity:.72}
+  .wrap{
+    width:min(1120px,94vw);
+    margin:0 auto 48px;
+  }
+  .tabs{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .tab{
+    border:1px solid var(--line);
+    background:#fff8ea;
+    padding:11px 18px;
+    border-radius:999px;
+    cursor:pointer;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .tab.active{
+    color:white;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border-color:transparent;
+    box-shadow:0 8px 22px rgba(191,74,35,.22);
+  }
+  .panel{
+    display:none;
+    grid-template-columns:360px 1fr;
+    gap:20px;
+    align-items:stretch;
+  }
+  .panel.active{display:grid}
+  .card{
+    background:rgba(255,250,240,.95);
+    border:1px solid var(--line);
+    border-radius:24px;
+    box-shadow:0 18px 50px rgba(93,55,25,.12);
+  }
+  .controls{padding:20px}
+  .controls h2{margin:0 0 10px;font-size:26px}
+  .desc{font-size:14px;opacity:.72;line-height:1.6;margin-bottom:12px}
+  .drop{
+    display:block;
+    border:2px dashed #dcb885;
+    border-radius:18px;
+    padding:16px;
+    margin:12px 0;
+    background:#fffdf8;
+    cursor:pointer;
+    text-align:center;
+  }
+  .drop:hover{background:#fff7ea}
+  .drop input{display:none}
+  .preview{
+    width:100%;
+    aspect-ratio:16/9;
+    border-radius:14px;
+    margin-top:10px;
+    background:#f0dcc1;
+    object-fit:cover;
+    display:none;
+  }
+  button.action{
+    width:100%;
+    margin-top:12px;
+    border:0;
+    border-radius:16px;
+    padding:14px 16px;
+    color:#fff;
+    font-size:16px;
+    font-weight:800;
+    cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 8px 18px rgba(154,77,45,.24);
+  }
+  button.action.secondary{background:#8b765f}
+  button.action:disabled{opacity:.45;cursor:not-allowed}
+  .small{
+    font-size:13px;
+    line-height:1.6;
+    opacity:.68;
+    margin-top:12px;
+  }
+  .stage{
+    min-height:570px;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(circle at 82% 13%, rgba(90,45,20,.22) 0 8%, transparent 8.5%),
+      linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,.22)),
+      repeating-linear-gradient(0deg,#ab6a3c 0 36px,#9e5f36 36px 72px);
+  }
+  .stage::after{
+    content:"";
+    position:absolute;
+    left:10%;right:10%;bottom:42px;height:18px;
+    background:rgba(81,44,25,.18);
+    filter:blur(10px);
+    border-radius:50%;
+  }
+  canvas{
+    width:min(560px,94%);
+    height:auto;
+    position:relative;
+    z-index:2;
+  }
+  .hint{
+    position:absolute;
+    top:18px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:3;
+    background:#fff9;
+    border:1px solid #e5caa1;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:13px;
+    backdrop-filter:blur(6px);
+    white-space:nowrap;
+  }
+  .shake{animation:shake .38s ease}
+  @keyframes shake{
+    0%{transform:rotate(0deg) scale(1)}
+    25%{transform:rotate(-2deg) scale(.97)}
+    50%{transform:rotate(2deg) scale(1.03)}
+    75%{transform:rotate(-1deg) scale(.99)}
+    100%{transform:rotate(0deg) scale(1)}
+  }
+  .mode2-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .footer{
+    text-align:center;
+    font-size:12px;
+    opacity:.58;
+    padding:10px 20px 28px;
+  }
+  @media (max-width:820px){
+    .panel{grid-template-columns:1fr}
+    .stage{min-height:440px}
+    .mode2-buttons{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🥮 月饼拍拍乐</h1>
+  <p>把任何图片拍成月饼，或者做成有馅的月饼再咬一口。</p>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-target="mode1">玩法一 · 图片变月饼</button>
+    <button class="tab" data-target="mode2">玩法二 · 馅料 + 月饼皮</button>
+  </div>
+
+  <section id="mode1" class="panel active">
+    <div class="card controls">
+      <h2>把图片拍扁</h2>
+      <div class="desc">上传一张图片，把它直接压进月饼表面。</div>
+      <label class="drop">
+        <strong>上传一张图片</strong><br>
+        <span class="small">人物、猫咪、Logo、表情包都可以</span>
+        <input id="img1" type="file" accept="image/*">
+        <img id="prev1" class="preview" alt="">
+      </label>
+      <button id="flattenBtn" class="action" disabled>✨ 啪！拍成月饼</button>
+      <button id="reset1" class="action secondary">↻ 重新来</button>
+      <div class="small">图片只会在你的浏览器本地处理，不会上传到服务器。</div>
+    </div>
+    <div class="card stage">
+      <div class="hint">上传后点击“拍成月饼”</div>
+      <canvas id="canvas1" width="700" height="560"></canvas>
+    </div>
+  </section>
+
+  <section id="mode2" class="panel">
+    <div class="card controls">
+      <h2>做一个有馅的月饼</h2>
+      <div class="desc">第一张图做馅，第二张图做月饼皮。咬开后会看到里面的“馅料图片”。</div>
+
+      <label class="drop">
+        <strong>① 上传馅料图片</strong><br>
+        <span class="small">这张图会藏在月饼里面</span>
+        <input id="fillingInput" type="file" accept="image/*">
+        <img id="fillingPrev" class="preview" alt="">
+      </label>
+
+      <label class="drop">
+        <strong>② 上传月饼皮图片</strong><br>
+        <span class="small">这张图会成为月饼表面</span>
+        <input id="skinInput" type="file" accept="image/*">
+        <img id="skinPrev" class="preview" alt="">
+      </label>
+
+      <button id="makeBtn" class="action" disabled>✨ 包起来，做成月饼</button>
+      <div class="mode2-buttons">
+        <button id="biteBtn" class="action" disabled>🌙 咔嚓！咬一口</button>
+        <button id="reset2" class="action secondary">↻ 重新来</button>
+      </div>
+      <div class="small">适合恶搞头像、食物、宠物、表情包，或者“这个东西里面到底是什么”的玩法。</div>
+    </div>
+    <div class="card stage">
+      <div class="hint">先上传两张图，再制作月饼</div>
+      <canvas id="canvas2" width="700" height="560"></canvas>
+    </div>
+  </section>
+</div>
+
+<div class="footer">Mooncake Patter · 纯前端 HTML Demo</div>
+
+<script>
+const $ = s => document.querySelector(s);
+
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    btn.classList.add('active');
+    $('#'+btn.dataset.target).classList.add('active');
+  });
+});
+
+function loadFile(input, preview, cb){
+  input.addEventListener('change',()=>{
+    const file = input.files && input.files[0];
+    if(!file) return;
+    const url = URL.createObjectURL(file);
+    preview.src = url;
+    preview.style.display = 'block';
+    const img = new Image();
+    img.onload=()=>cb(img);
+    img.src=url;
+  });
+}
+
+function coverDraw(ctx,img,x,y,w,h){
+  const ir=img.width/img.height, rr=w/h;
+  let sx=0,sy=0,sw=img.width,sh=img.height;
+  if(ir>rr){ sw=img.height*rr; sx=(img.width-sw)/2; }
+  else { sh=img.width/rr; sy=(img.height-sh)/2; }
+  ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
+}
+
+function drawMooncakeBase(ctx, img){
+  const cx=350, cy=285, rx=210, ry=178;
+  ctx.clearRect(0,0,700,560);
+  ctx.save();
+
+  ctx.fillStyle='rgba(76,42,21,.22)';
+  ctx.beginPath();
+  ctx.ellipse(cx,cy+178,190,30,0,0,Math.PI*2);
+  ctx.fill();
+
+  const grad=ctx.createLinearGradient(0,cy-80,0,cy+210);
+  grad.addColorStop(0,'#e1a14d');
+  grad.addColorStop(1,'#8d4e26');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.ellipse(cx,cy+42,rx,ry,0,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle='#b76632';
+  for(let i=0;i<36;i++){
+    const a=i/36*Math.PI*2;
+    const x=cx+Math.cos(a)*rx*0.98;
+    const y=cy+Math.sin(a)*ry*0.98+12;
+    ctx.beginPath();
+    ctx.ellipse(x,y,17,14,a,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(cx,cy-18);
+  ctx.scale(1,ry/rx);
+  ctx.beginPath();
+  ctx.arc(0,0,rx-12,0,Math.PI*2);
+  ctx.clip();
+  ctx.scale(1,rx/ry);
+  ctx.translate(-cx,-(cy-18));
+
+  if(img) coverDraw(ctx,img,cx-rx,cy-18-ry,rx*2,ry*2);
+  else {
+    ctx.fillStyle='#dca054';
+    ctx.fillRect(cx-rx,cy-18-ry,rx*2,ry*2);
+  }
+
+  ctx.fillStyle='rgba(184,102,43,.28)';
+  ctx.fillRect(cx-rx,cy-18-ry,rx*2,ry*2);
+  ctx.restore();
+
+  ctx.strokeStyle='rgba(255,232,173,.76)';
+  ctx.lineWidth=7;
+  ctx.beginPath();
+  ctx.ellipse(cx,cy-18,rx-15,ry-15,0,0,Math.PI*2);
+  ctx.stroke();
+
+  ctx.strokeStyle='rgba(105,49,26,.44)';
+  ctx.lineWidth=5;
+  ctx.beginPath();
+  ctx.ellipse(cx,cy-18,136,112,0,0,Math.PI*2);
+  ctx.stroke();
+
+  ctx.lineWidth=3;
+  for(let i=0;i<12;i++){
+    const a=i/12*Math.PI*2;
+    ctx.beginPath();
+    ctx.ellipse(cx+Math.cos(a)*150,cy-18+Math.sin(a)*120,18,10,a,0,Math.PI*2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+let img1=null;
+loadFile($('#img1'),$('#prev1'),img=>{
+  img1=img;
+  $('#flattenBtn').disabled=false;
+  const c=$('#canvas1'),ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle='#fff8e8';
+  ctx.font='bold 28px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('图片已准备好，拍它！',350,280);
+});
+
+$('#flattenBtn').onclick=()=>{
+  const c=$('#canvas1');
+  c.classList.remove('shake');
+  void c.offsetWidth;
+  c.classList.add('shake');
+  drawMooncakeBase(c.getContext('2d'),img1);
+};
+
+$('#reset1').onclick=()=>{
+  img1=null;
+  $('#img1').value='';
+  $('#prev1').style.display='none';
+  $('#flattenBtn').disabled=true;
+  $('#canvas1').getContext('2d').clearRect(0,0,700,560);
+};
+
+let filling=null, skin=null, made=false, bitten=false;
+function updateMake(){
+  $('#makeBtn').disabled=!(filling&&skin);
+}
+loadFile($('#fillingInput'),$('#fillingPrev'),img=>{
+  filling=img;
+  updateMake();
+});
+loadFile($('#skinInput'),$('#skinPrev'),img=>{
+  skin=img;
+  updateMake();
+});
+
+function drawStuffedMooncake(bit=false){
+  const c=$('#canvas2'),ctx=c.getContext('2d');
+  drawMooncakeBase(ctx,skin);
+
+  if(bit){
+    ctx.save();
+    ctx.globalCompositeOperation='destination-out';
+    [[492,145,54],[535,180,49],[526,230,45]].forEach(([x,y,r])=>{
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fill();
+    });
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(452,120);
+    ctx.quadraticCurveTo(548,148,560,250);
+    ctx.quadraticCurveTo(514,284,470,246);
+    ctx.closePath();
+    ctx.clip();
+    coverDraw(ctx,filling,430,110,150,170);
+    ctx.fillStyle='rgba(92,46,28,.18)';
+    ctx.fillRect(430,110,150,170);
+    ctx.restore();
+
+    ctx.fillStyle='#8a4b2d';
+    [[560,250,7],[585,275,5],[535,310,6],[610,240,4]].forEach(([x,y,r])=>{
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fill();
+    });
+  }
+}
+
+$('#makeBtn').onclick=()=>{
+  made=true;
+  bitten=false;
+  $('#biteBtn').disabled=false;
+  $('#biteBtn').textContent='🌙 咔嚓！咬一口';
+  const c=$('#canvas2');
+  c.classList.remove('shake');
+  void c.offsetWidth;
+  c.classList.add('shake');
+  drawStuffedMooncake(false);
+};
+
+$('#biteBtn').onclick=()=>{
+  if(!made)return;
+  bitten=!bitten;
+  $('#biteBtn').textContent=bitten?'↩ 恢复完整月饼':'🌙 咔嚓！咬一口';
+  drawStuffedMooncake(bitten);
+};
+
+$('#reset2').onclick=()=>{
+  filling=null;
+  skin=null;
+  made=false;
+  bitten=false;
+  $('#fillingInput').value='';
+  $('#skinInput').value='';
+  $('#fillingPrev').style.display='none';
+  $('#skinPrev').style.display='none';
+  $('#makeBtn').disabled=true;
+  $('#biteBtn').disabled=true;
+  $('#biteBtn').textContent='🌙 咔嚓！咬一口';
+  $('#canvas2').getContext('2d').clearRect(0,0,700,560);
+};
+</script>
+</body>
+</html>
